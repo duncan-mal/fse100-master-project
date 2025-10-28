@@ -1,0 +1,6 @@
+#tts library 
+pyttsx3
+#library to handle 1 wire comms with thermistor sensor
+w1thermsensor
+#ras pi GPIO library
+RPi.GPIO
