@@ -11,7 +11,7 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setup(17, GPIO.OUT)
 GPIO.setup(18, GPIO.IN)
 GPIO.setup(6, GPIO.IN)
-GPIO.setup(22, GPIO.IN)
+GPIO.setup(22, GPIO.OUT)
 
 tts = pyttsx3.init()
 tts.setProperty('rate', 150)
@@ -20,10 +20,15 @@ americanoMode = False   # Bool for temp mode
 vibeNum = 0  # number of times vibration motor has ran
 vibeTimer = 0 # timer for vibration motor
 
+def shutdown():
+    tts.say("Ok, Goodbye")
+    tts.runAndWait()
+    sys.exit(0)
+
 def changetempmeasurment():
     global americanoMode
-    tts.say("Chaning Temperature Measurments")
-    print("Chaning Temperature Measurment")
+    tts.say("I, Changing Temperature Measurments")
+    print("Changing Temperature Measurment")
     if americanoMode:
         americanoMode = False
     else:
@@ -32,7 +37,7 @@ def changetempmeasurment():
     powerofftimer = 0
     while GPIO.input(6) == 1:
         if powerofftimer >= 50:
-            sys.exit(0)
+            shutdown()
         else:
             powerofftimer +=1
 def distance():
@@ -72,16 +77,13 @@ def read_temp():
     global americanoMode
     #Read Celsius temp from sensor (atm just using constant for testing)
     temp_reading = round(thermprobe.get_temperature())
-    GPIO.output(22, 1)
-    time.sleep(0.5)
-    GPIO.output(22, 0)
     #reset vibration timer
     vibeTimer = 0
     vibeNum = 0
 
     #checking bounds for temp
     if temp_reading < -10 or temp_reading > 120:
-        tts.say(" Temp out of range")
+        tts.say("Temp out of range")
         return
 
     #Determing if reading should be Fahrenheit or Celsius
@@ -89,10 +91,10 @@ def read_temp():
         temp_reading = (temp_reading * (9/5)) +32
         temp_reading = round(temp_reading)
         print(str(temp_reading)+"f")
-        tts.say(str(temp_reading)+ " degrees fahrenheit")
+        tts.say("Its " + str(temp_reading)+ " degrees fahrenheit")
     else:
         print(str(temp_reading)+"C")
-        tts.say( str(temp_reading)+ " degrees celsius")
+        tts.say("Its " + str(temp_reading)+ " degrees celsius")
 
     #Run TTS engine and wait to prevent attempt at talking over its self
     tts.runAndWait()
@@ -102,14 +104,18 @@ def vibrate():
     global vibeNum
     global vibeTimer
     print("Vibrating Motor")
-    
     print("Vibe Number: " + str(vibeNum + 1))
+    for _ in range(3):
+        GPIO.output(22, 1)
+        time.sleep(0.5)
+        GPIO.output(22, 0)
+        time.sleep(0.5)
     vibeNum += 1
     vibeTimer = 0
     if vibeNum > 3:
         print("Killing Due To Inactivity")
         #exit code
-        sys.exit(0)
+        shutdown()
 
 
 def main():
@@ -120,7 +126,6 @@ def main():
     tts.runAndWait()
 
     while True:
-
         if GPIO.input(6) == 1:
             changetempmeasurment()
         #Reading from ultrasonic sensor (constant for testing)
@@ -130,6 +135,6 @@ def main():
             time.sleep(1)
             vibeTimer += 1
             print("Vibe Timer: "+str(vibeTimer))
-            if vibeTimer >= 60:
+            if vibeTimer >= 20:
                 vibrate()
 main()
