@@ -8,10 +8,11 @@ thermprobe = W1ThermSensor()
 
 GPIO.setmode(GPIO.BCM)
 
-GPIO.setup(17, GPIO.OUT)
-GPIO.setup(18, GPIO.IN)
-GPIO.setup(6, GPIO.IN)
-GPIO.setup(22, GPIO.OUT)
+GPIO.setup(17, GPIO.OUT) #Ultrasonic Trigger
+GPIO.setup(18, GPIO.IN) #Ultrasonic Echo
+GPIO.setup(6, GPIO.IN) #Touch Sensor
+GPIO.setup(22, GPIO.OUT) #Vibration Motor
+#GPIO 4 Thermistor
 
 tts = pyttsx3.init()
 tts.setProperty('rate', 150)
@@ -19,6 +20,7 @@ tts.setProperty('rate', 150)
 americanoMode = False   # Bool for temp mode
 vibeNum = 0  # number of times vibration motor has ran
 vibeTimer = 0 # timer for vibration motor
+timeoutsec = 240 #number of seconds before timeout
 
 def shutdown():
     tts.say("Ok, Goodbye")
@@ -35,11 +37,7 @@ def changetempmeasurment():
         americanoMode = True
     tts.runAndWait()
     powerofftimer = 0
-    while GPIO.input(6) == 1:
-        if powerofftimer >= 50:
-            shutdown()
-        else:
-            powerofftimer +=1
+
 def distance():
 	GPIO.output(17, 0)
 	time.sleep(0.000002)
@@ -100,26 +98,28 @@ def read_temp():
     tts.runAndWait()
     time.sleep(1)
 
-def vibrate():
-    global vibeNum
-    global vibeTimer
-    print("Vibrating Motor")
-    print("Vibe Number: " + str(vibeNum + 1))
-    for _ in range(3):
+def sleepmode():
+    for i in range(3):
         GPIO.output(22, 1)
         time.sleep(0.5)
         GPIO.output(22, 0)
         time.sleep(0.5)
-    vibeNum += 1
-    vibeTimer = 0
-    if vibeNum > 3:
-        print("Killing Due To Inactivity")
-        #exit code
-        shutdown()
+    print("eepy time")
+    tts.say("Im Going To Sleep")
+    tts.runAndWait()
+    while True:
+        if ultrasonicreading():
+            break
+        time.sleep(1)
+    print("End Of Eepy Time")
+    tts.say("Hello")
+    tts.runAndWait()
+    
 
 
 def main():
     global vibeTimer
+    global timeoutsec
     #Intial make aware that device is on
     time.sleep(1)
     tts.say("Hello")
@@ -135,6 +135,7 @@ def main():
             time.sleep(1)
             vibeTimer += 1
             print("Vibe Timer: "+str(vibeTimer))
-            if vibeTimer >= 20:
-                vibrate()
+            if vibeTimer >= timeoutsec:
+                sleepmode()
+                vibeTimer = 0
 main()
